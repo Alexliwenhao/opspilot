@@ -33,6 +33,8 @@ export const en = {
   quickConnect: "Quick connect",
   go: "Go",
   multiExec: "Multi-exec",
+  multiExecOn: "on",
+  multiExecOff: "off",
   settings: "Settings",
 
   // View switcher (kept for programmatic access)
@@ -45,6 +47,7 @@ export const en = {
 
   // SFTP panel
   connections: "Connections",
+  noConnections: "No connections. Use Quick Connect or add one.",
   addHost: "+ Host",
   remoteMonitoring: "Remote monitoring",
   followTerminalFolder: "Follow terminal folder",
@@ -86,10 +89,7 @@ export const en = {
 
   // SFTP
   sftpHost: "Host",
-  go: "Go",
-  up: "↑ Up",
   emptyDir: "empty directory",
-  download: "↓",
   delete: "×",
   queuedDownload: "queued ↓",
   deleteConfirm: (path: string) => `Delete ${path}?`,
@@ -208,6 +208,8 @@ export const zh: Dict = {
   quickConnect: "快速连接",
   go: "连接",
   multiExec: "多执行",
+  multiExecOn: "开",
+  multiExecOff: "关",
   settings: "设置",
 
   viewTerminals: "终端",
@@ -218,6 +220,7 @@ export const zh: Dict = {
   viewHistory: "历史",
 
   connections: "连接",
+  noConnections: "暂无连接。使用快速连接或添加一个。",
   addHost: "+ 主机",
   remoteMonitoring: "远程监控",
   followTerminalFolder: "跟随终端目录",

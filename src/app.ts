@@ -402,18 +402,42 @@ function wireControls() {
       e.stopPropagation();
       const action = el.dataset.action;
       if (action === "add-host") openHostModal(null);
+      else if (action === "new-session") openHostModal(null);
       else if (action === "open-settings") openSettingsModal();
       else if (action === "new-terminal") {
-        if (state.profiles[0]) openTerminal(state.profiles[0].id);
+        if (state.profiles[0]) connectHost(state.profiles[0].id);
       } else if (action === "close-tab") {
-        if (state.activeTerm) closeTerminal(state.activeTerm);
+        if (state.activeTerm) {
+          const v = state.terminals.get(state.activeTerm);
+          if (v) {
+            void api.closeTerminal(v.termId);
+            state.terminals.delete(v.termId);
+            if (state.activeTerm === v.termId) state.activeTerm = null;
+            renderMain();
+            renderStatusbar();
+          }
+        }
       }
     });
   });
 
+  // Menu bar — click to toggle dropdown (for better UX)
+  document.querySelectorAll<HTMLElement>(".menubar .menu").forEach((menuEl) => {
+    menuEl.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const wasActive = menuEl.classList.contains("active");
+      document.querySelectorAll(".menubar .menu").forEach((m) => m.classList.remove("active"));
+      if (!wasActive) menuEl.classList.add("active");
+    });
+  });
+  // Close dropdowns when clicking outside
+  document.addEventListener("click", () => {
+    document.querySelectorAll(".menubar .menu").forEach((m) => m.classList.remove("active"));
+  });
+
   // Toolbar buttons
   document.getElementById("tool-new")!.onclick = () => {
-    if (state.profiles[0]) openTerminal(state.profiles[0].id);
+    if (state.profiles[0]) connectHost(state.profiles[0].id);
   };
   document.getElementById("tool-broadcast")!.onclick = () => toggleBroadcast();
 
@@ -506,7 +530,7 @@ async function openQuickConnect(target: string) {
   // Check if host already exists
   const existing = state.profiles.find((p) => p.host === host && p.port === port);
   if (existing) {
-    openTerminal(existing.id);
+    connectHost(existing.id);
     return;
   }
   // Create new profile
@@ -516,13 +540,20 @@ async function openQuickConnect(target: string) {
     host,
     port,
     username: user,
-    auth: "password",
-    savedPassword: null,
+    authKind: "password",
+    keyPath: null,
+    group: "Default",
+    color: "#e0533d",
+    saveSecret: false,
+    initCommands: [],
+    note: null,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   };
   await api.saveProfile(profile);
   state.profiles = await api.listProfiles();
   renderConnList();
-  openTerminal(profile.id);
+  connectHost(profile.id);
 }
 
 function switchView(view: MainView) {
@@ -572,7 +603,7 @@ function renderConnList() {
   list.querySelectorAll<HTMLElement>(".conn-item").forEach((el) => {
     el.onclick = () => {
       const pid = el.dataset.profile!;
-      openTerminal(pid);
+      connectHost(pid);
     };
   });
 }
@@ -695,38 +726,7 @@ function renderEngine() {
 function renderTree() {
   // Keep for backward compat — actual rendering now goes through renderConnList
   renderConnList();
-}
-      html += `<div class="host" data-id="${p.id}">
-        <span class="dot" style="background:${color}"></span>
-        <div>
-          <div class="name">${escapeHtml(p.name)}</div>
-          <div class="meta">${escapeHtml(p.username)}@${escapeHtml(p.host)}:${p.port}</div>
-        </div>
-        <button class="del" data-del="${p.id}" title="Delete">×</button>
-      </div>`;
-    }
-  }
-  if (!state.profiles.length) {
-    html = `<div class="empty" style="padding:20px;color:var(--text-dim)">No hosts yet. Click “+ Host”.</div>`;
-  }
-  tree.innerHTML = html;
-
-  tree.querySelectorAll<HTMLElement>(".host").forEach((el) => {
-    const id = el.dataset.id!;
-    el.onclick = (e) => {
-      if ((e.target as HTMLElement).dataset.del) return;
-      void connectHost(id);
-    };
-  });
-  tree.querySelectorAll<HTMLElement>("[data-del]").forEach((el) => {
-    el.onclick = async (e) => {
-      e.stopPropagation();
-      const id = (e.target as HTMLElement).dataset.del!;
-      await api.deleteProfile(id);
-      state.profiles = await api.listProfiles();
-      renderTree();
-    };
-  });
+  renderStatusbar();
 }
 
 function renderMain() {
@@ -1417,26 +1417,91 @@ function openHostModal(existing: HostProfile | null) {
     };
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
-  backdrop.innerHTML = `<div class="modal">
-    <h3>${existing ? "Edit Host" : "New Host"}</h3>
-    <div class="field"><label>Name</label><input id="m-name" value="${escapeAttr(p.name)}"/></div>
-    <div class="field"><label>Host</label><input id="m-host" value="${escapeAttr(p.host)}"/></div>
-    <div class="field"><label>Port</label><input id="m-port" type="number" value="${p.port}"/></div>
-    <div class="field"><label>Username</label><input id="m-user" value="${escapeAttr(p.username)}"/></div>
-    <div class="field"><label>Auth</label><select id="m-auth">
-      <option value="password" ${p.authKind === "password" ? "selected" : ""}>Password</option>
-      <option value="key" ${p.authKind === "key" ? "selected" : ""}>Key file</option>
-      <option value="agent" ${p.authKind === "agent" ? "selected" : ""}>SSH agent</option>
-    </select></div>
-    <div class="field" id="m-keypath-field"><label>Key path (if key auth)</label><input id="m-keypath" value="${escapeAttr(p.keyPath ?? "")}"/></div>
-    <div class="field"><label>Group</label><input id="m-group" value="${escapeAttr(p.group ?? "")}"/></div>
-    <div class="field"><label>Color</label><input id="m-color" type="color" value="${p.color ?? "#e0533d"}" style="height:32px"/></div>
+  backdrop.innerHTML = `<div class="modal session-modal">
+    <div class="session-title">Session settings</div>
+    <div class="session-protocols">
+      <div class="proto active" data-proto="ssh"><span class="proto-icon">⇌</span><span class="proto-label">SSH</span></div>
+      <div class="proto" data-proto="telnet"><span class="proto-icon">⎔</span><span class="proto-label">Telnet</span></div>
+      <div class="proto" data-proto="rsh"><span class="proto-icon">▣</span><span class="proto-label">Rsh</span></div>
+      <div class="proto" data-proto="xdmcp"><span class="proto-icon">◈</span><span class="proto-label">Xdmcp</span></div>
+      <div class="proto" data-proto="rdp"><span class="proto-icon">▨</span><span class="proto-label">RDP</span></div>
+      <div class="proto" data-proto="vnc"><span class="proto-icon">⊞</span><span class="proto-label">VNC</span></div>
+      <div class="proto" data-proto="ftp"><span class="proto-icon">↑↓</span><span class="proto-label">FTP</span></div>
+      <div class="proto" data-proto="sftp"><span class="proto-icon">⇅</span><span class="proto-label">SFTP</span></div>
+      <div class="proto" data-proto="serial"><span class="proto-icon">🔌</span><span class="proto-label">Serial</span></div>
+      <div class="proto" data-proto="file"><span class="proto-icon">📄</span><span class="proto-label">File</span></div>
+      <div class="proto" data-proto="shell"><span class="proto-icon">⌨</span><span class="proto-label">Shell</span></div>
+      <div class="proto" data-proto="browser"><span class="proto-icon">🌐</span><span class="proto-label">Browser</span></div>
+      <div class="proto" data-proto="mosh"><span class="proto-icon">ℳ</span><span class="proto-label">Mosh</span></div>
+      <div class="proto" data-proto="aws-s3"><span class="proto-icon">☁</span><span class="proto-label">Aws S3</span></div>
+      <div class="proto" data-proto="wsl"><span class="proto-icon">◫</span><span class="proto-label">WSL</span></div>
+    </div>
+    <div class="session-warning">
+      Warning: you have reached the maximum number of saved sessions for the personal edition of MobaXterm.<br/>
+      You can start a new session but it will not be automatically saved.<br/>
+      Please support MobaXterm by subscribing to the Professional edition here: <a href="https://mobaxterm.mobatek.net" target="_blank">https://mobaxterm.mobatek.net</a>
+    </div>
+    <div class="session-config">
+      <div class="session-config-head" id="proto-head">
+        <span class="proto-icon-large">🖥</span>
+        <span>Choose a session type…</span>
+      </div>
+      <div class="session-form">
+        <div class="field"><label>Name</label><input id="m-name" value="${escapeAttr(p.name)}"/></div>
+        <div class="field-row">
+          <div class="field"><label>Host</label><input id="m-host" value="${escapeAttr(p.host)}" style="width:100%"/></div>
+          <div class="field"><label>Port</label><input id="m-port" type="number" value="${p.port}" style="width:80px"/></div>
+        </div>
+        <div class="field"><label>Username</label><input id="m-user" value="${escapeAttr(p.username)}"/></div>
+        <div class="field"><label>Authentication</label><select id="m-auth">
+          <option value="password" ${p.authKind === "password" ? "selected" : ""}>Password</option>
+          <option value="key" ${p.authKind === "key" ? "selected" : ""}>Key file</option>
+          <option value="agent" ${p.authKind === "agent" ? "selected" : ""}>SSH agent</option>
+        </select></div>
+        <div class="field" id="m-keypath-field"><label>Key path (if key auth)</label><input id="m-keypath" value="${escapeAttr(p.keyPath ?? "")}"/></div>
+        <div class="field-row">
+          <div class="field"><label>Group</label><input id="m-group" value="${escapeAttr(p.group ?? "")}" style="width:100%"/></div>
+          <div class="field"><label>Color</label><input id="m-color" type="color" value="${p.color ?? "#e0533d"}" style="width:48px;height:26px"/></div>
+        </div>
+      </div>
+    </div>
     <div class="actions">
-      <button id="m-cancel">Cancel</button>
-      <button class="primary" id="m-save">Save</button>
+      <button class="primary" id="m-save">✓ OK</button>
+      <button id="m-cancel">✕ Cancel</button>
     </div>
   </div>`;
   document.body.appendChild(backdrop);
+
+  // Protocol switching
+  const protoIcons: Record<string, string> = {
+    ssh: "⇌", telnet: "⎔", rsh: "▣", xdmcp: "◈", rdp: "▨", vnc: "⊞",
+    ftp: "↑↓", sftp: "⇅", serial: "🔌", file: "📄", shell: "⌨",
+    browser: "🌐", mosh: "ℳ", "aws-s3": "☁", wsl: "◫",
+  };
+  const protoLabels: Record<string, string> = {
+    ssh: "SSH", telnet: "Telnet", rsh: "Rsh", xdmcp: "Xdmcp", rdp: "RDP", vnc: "VNC",
+    ftp: "FTP", sftp: "SFTP", serial: "Serial", file: "File", shell: "Shell",
+    browser: "Browser", mosh: "Mosh", "aws-s3": "Aws S3", wsl: "WSL",
+  };
+  backdrop.querySelectorAll<HTMLElement>(".proto").forEach((el) => {
+    el.onclick = () => {
+      backdrop.querySelectorAll<HTMLElement>(".proto").forEach((e) => e.classList.remove("active"));
+      el.classList.add("active");
+      const proto = el.dataset.proto!;
+      const icon = protoIcons[proto] ?? "⇌";
+      const label = protoLabels[proto] ?? proto;
+      const head = backdrop.querySelector<HTMLElement>("#proto-head");
+      if (head) {
+        head.innerHTML = `<span class="proto-icon-large">${icon}</span><span>${label}</span>`;
+      }
+      // Adjust port default
+      const portInput = backdrop.querySelector<HTMLInputElement>("#m-port");
+      if (portInput) {
+        const defaults: Record<string, number> = { ssh: 22, telnet: 23, ftp: 21, sftp: 22, rdp: 3389, vnc: 5900, mosh: 60000 };
+        if (defaults[proto]) portInput.value = String(defaults[proto]);
+      }
+    };
+  });
 
   backdrop.onclick = (e) => {
     if (e.target === backdrop) backdrop.remove();

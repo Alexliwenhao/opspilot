@@ -136,7 +136,8 @@ input, select, textarea {
   display: none;
   padding: 2px 0;
 }
-.menubar .menu:hover .sub {
+.menubar .menu:hover .sub,
+.menubar .menu.active .sub {
   display: block;
 }
 .menubar .menu .sub-item {
@@ -1146,4 +1147,223 @@ input, select, textarea {
 }
 .checkbox input {
   margin: 0;
+}
+
+/* ============================================================
+   Session Settings dialog — MobaXterm style
+   ============================================================ */
+.session-modal {
+  width: 640px;
+  max-height: 92vh;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  background: #252526;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+.session-modal .session-title {
+  padding: 10px 16px;
+  background: #2d2d30;
+  border-bottom: 1px solid #3c3c3c;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+.session-modal .session-protocols {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 16px;
+  background: #252526;
+  border-bottom: 1px solid #3c3c3c;
+}
+.session-modal .proto {
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 10px;
+  color: #cccccc;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+.session-modal .proto:hover {
+  background: #3c3c3c;
+  border-color: #555;
+}
+.session-modal .proto.active {
+  background: #094771;
+  border-color: #0078d4;
+  color: #fff;
+}
+.session-modal .proto .proto-icon {
+  font-size: 18px;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  color: #fff;
+}
+.session-modal .proto[data-proto="ssh"] .proto-icon { background: #0078d4; }
+.session-modal .proto[data-proto="telnet"] .proto-icon { background: #6a9955; }
+.session-modal .proto[data-proto="rsh"] .proto-icon { background: #c586c0; }
+.session-modal .proto[data-proto="xdmcp"] .proto-icon { background: #808080; }
+.session-modal .proto[data-proto="rdp"] .proto-icon { background: #f48771; }
+.session-modal .proto[data-proto="vnc"] .proto-icon { background: #dcdcaa; color: #333; }
+.session-modal .proto[data-proto="ftp"] .proto-icon { background: #4ec9b0; }
+.session-modal .proto[data-proto="sftp"] .proto-icon { background: #1a8ae0; }
+.session-modal .proto[data-proto="serial"] .proto-icon { background: #ce9178; }
+.session-modal .proto[data-proto="file"] .proto-icon { background: #569cd6; }
+.session-modal .proto[data-proto="shell"] .proto-icon { background: #3c8dbc; }
+.session-modal .proto[data-proto="browser"] .proto-icon { background: #28b4c8; }
+.session-modal .proto[data-proto="mosh"] .proto-icon { background: #e67e22; }
+.session-modal .proto[data-proto="aws-s3"] .proto-icon { background: #f39c12; }
+.session-modal .proto[data-proto="wsl"] .proto-icon { background: #00b4ff; }
+.session-modal .proto .proto-label {
+  font-size: 9px;
+  white-space: nowrap;
+  color: #cccccc;
+}
+.session-modal .proto.active .proto-label {
+  color: #fff;
+}
+.session-modal .session-warning {
+  padding: 8px 16px;
+  background: #252526;
+  color: #dcdcaa;
+  font-size: 11px;
+  line-height: 1.5;
+  border-bottom: 1px solid #3c3c3c;
+}
+.session-modal .session-warning a {
+  color: #569cd6;
+  text-decoration: underline;
+}
+.session-modal .session-config {
+  flex: 1;
+  padding: 20px 16px;
+  overflow-y: auto;
+  background: #252526;
+}
+.session-modal .session-config-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  justify-content: center;
+  padding: 24px 0 16px;
+  color: #888;
+  font-size: 14px;
+}
+.session-modal .proto-icon-large {
+  font-size: 48px;
+  opacity: 0.45;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: #3c3c3c;
+}
+.session-modal .session-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 420px;
+  margin: 0 auto;
+}
+.session-modal .field-row {
+  display: flex;
+  gap: 10px;
+}
+.session-modal .field-row .field {
+  flex: 1;
+}
+.session-modal .actions {
+  border-top: 1px solid #3c3c3c;
+  padding: 12px 16px;
+  justify-content: center;
+  display: flex;
+  gap: 12px;
+  background: #2d2d30;
+}
+.session-modal .actions button {
+  min-width: 90px;
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.session-modal .actions .primary {
+  background: #4caf50;
+  color: #fff;
+  border-color: #3d8b40;
+}
+.session-modal .actions .primary:hover {
+  background: #5cbf60;
+}
+.session-modal .actions button:not(.primary) {
+  background: #c62828;
+  color: #fff;
+  border-color: #a31f1f;
+}
+.session-modal .actions button:not(.primary):hover {
+  background: #d63838;
+}
+
+/* AI panel meta row — MobaXterm style */
+.ai-panel .ai-meta .metarow .val.lbl,
+.ai-panel .ai-meta .metarow .val-val {
+  flex: 1;
+}
+
+/* View tab with close button — MobaXterm style */
+.tab .thost {
+  font-family: var(--mono);
+}
+
+/* Status bar color — MobaXterm blue */
+.statusbar {
+  background: var(--accent);
+}
+
+/* Menu bar hover sub-items highlight */
+.menubar .menu .sub-item:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* View shell — compact MobaXterm style */
+.view-head {
+  padding: 4px 10px;
+}
+.view-head strong {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Scrollbar — MobaXterm */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--bg-4);
+  border: none;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--bg-5);
 }
