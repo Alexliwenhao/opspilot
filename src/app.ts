@@ -671,9 +671,8 @@ function renderApproval(req: ApprovalRequest): string {
     <div class="cmd">${escapeHtml(req.command)}</div>
     <div class="reason">${escapeHtml(req.reason)} · risk: ${req.risk}</div>
     <div class="actions">
-      <button class="allow" data-approve="${req.requestId}" data-decision="allow">Allow</button>
-      <button class="allow" data-approve="${req.requestId}" data-decision="alwaysAllow">Always</button>
-      <button class="deny" data-approve="${req.requestId}" data-decision="deny">Deny</button>
+      <button class="allow" data-approve="${req.requestId}" data-decision="allow">${t("approve")}</button>
+      <button class="deny" data-approve="${req.requestId}" data-decision="deny">${t("deny")}</button>
     </div>
   </div>`;
 }
@@ -736,7 +735,7 @@ function renderSftpGrid() {
   const grid = document.getElementById("sftp-grid");
   if (!grid) return;
   if (!state.sftpEntries.length) {
-    grid.innerHTML = `<div class="hint" style="padding:16px">empty directory</div>`;
+    grid.innerHTML = `<div class="hint" style="padding:16px">${t("emptyDir")}</div>`;
     return;
   }
   grid.innerHTML = state.sftpEntries
@@ -814,36 +813,46 @@ function flash(el: HTMLElement, msg: string) {
   setTimeout(() => t.remove(), 1200);
 }
 
+function statusLabel(s: string): string {
+  switch (s) {
+    case "stopped": return t("statusStopped");
+    case "starting": return t("statusStarting");
+    case "running": return t("statusRunning");
+    case "error": return t("statusError");
+    default: return s;
+  }
+}
+
 // --- Tunnels --------------------------------------------------------------
 
 function renderTunnels(main: HTMLElement) {
   main.innerHTML = `
     <div class="view">
       <div class="view-head">
-        <strong>SSH Tunnels</strong>
-        <span class="hint">local (L) · remote (R) · dynamic SOCKS (D)</span>
+        <strong>${t("sshTunnels")}</strong>
+        <span class="hint">${t("tunnelHint")}</span>
         <div class="spacer"></div>
-        <button class="btn" id="tun-add">+ Tunnel</button>
+        <button class="btn" id="tun-add">${t("addTunnel")}</button>
       </div>
       <table class="ttable" id="tun-table"></table>
     </div>`;
   const tbl = document.getElementById("tun-table")!;
   if (!state.tunnels.length) {
-    tbl.innerHTML = `<tr><td class="hint" style="padding:16px">No tunnels. Click “+ Tunnel”.</td></tr>`;
+    tbl.innerHTML = `<tr><td class="hint" style="padding:16px">${t("noTunnels")}</td></tr>`;
   } else {
     tbl.innerHTML = state.tunnels
-      .map((t) => {
-        const host = state.profiles.find((p) => p.id === t.profileId)?.name ?? t.profileId;
-        const dest = t.kind === "dynamic" ? "SOCKS" : `${t.remoteHost}:${t.remotePort}`;
+      .map((tun) => {
+        const host = state.profiles.find((p) => p.id === tun.profileId)?.name ?? tun.profileId;
+        const dest = tun.kind === "dynamic" ? "SOCKS" : `${tun.remoteHost}:${tun.remotePort}`;
         return `<tr>
-          <td><span class="badge ${t.status}">${t.status}</span></td>
-          <td><strong>${escapeHtml(t.name)}</strong><div class="hint">${escapeHtml(host)}</div></td>
-          <td><code>${t.kind[0].toUpperCase()}:${t.bindAddress}:${t.localPort} → ${escapeHtml(dest)}</code></td>
-          <td class="tmsg">${t.message ? escapeHtml(t.message) : ""}</td>
+          <td><span class="badge ${tun.status}">${statusLabel(tun.status)}</span></td>
+          <td><strong>${escapeHtml(tun.name)}</strong><div class="hint">${escapeHtml(host)}</div></td>
+          <td><code>${tun.kind[0].toUpperCase()}:${tun.bindAddress}:${tun.localPort} → ${escapeHtml(dest)}</code></td>
+          <td class="tmsg">${tun.message ? escapeHtml(tun.message) : ""}</td>
           <td class="tright">
-            <button class="btn" data-toggle="${t.id}">${t.status === "running" ? "Stop" : "Start"}</button>
-            <button class="btn" data-edit="${t.id}">Edit</button>
-            <button class="btn" data-del="${t.id}">×</button>
+            <button class="btn" data-toggle="${tun.id}">${tun.status === "running" ? t("stop") : t("start")}</button>
+            <button class="btn" data-edit="${tun.id}">${t("edit")}</button>
+            <button class="btn" data-del="${tun.id}">${t("delete")}</button>
           </td>
         </tr>`;
       })
@@ -879,26 +888,26 @@ function renderMacros(main: HTMLElement) {
   main.innerHTML = `
     <div class="view">
       <div class="view-head">
-        <strong>Macros</strong>
-        <span class="hint">record keystrokes → replay on any terminal</span>
+        <strong>${t("macros")}</strong>
+        <span class="hint">${t("macroHint")}</span>
         <div class="spacer"></div>
-        <button class="btn ${rec ? "rec-on" : ""}" id="mac-record">${rec ? "⏹ Stop recording" : "⏺ Record"}</button>
-        <button class="btn" id="mac-add">+ Macro</button>
+        <button class="btn ${rec ? "rec-on" : ""}" id="mac-record">${rec ? t("stopRecording") : t("record")}</button>
+        <button class="btn" id="mac-add">${t("addMacro")}</button>
       </div>
       <div class="mlist" id="mac-list"></div>
     </div>`;
   const list = document.getElementById("mac-list")!;
   if (!state.macros.length) {
-    list.innerHTML = `<div class="hint" style="padding:16px">No macros. Record one or add manually.</div>`;
+    list.innerHTML = `<div class="hint" style="padding:16px">${t("noMacros")}</div>`;
   } else {
     list.innerHTML = state.macros
       .map((m) => `<div class="mrow">
         <div class="mname">${escapeHtml(m.name)} ${m.shortcut ? `<span class="hint">${escapeHtml(m.shortcut)}</span>` : ""}</div>
         <div class="msteps">${escapeHtml(m.steps.join("  ⏎  "))}</div>
         <div class="mactions">
-          <button class="btn" data-run="${m.id}" ${state.terminals.size ? "" : "disabled"}>▶ Run on active</button>
-          <button class="btn" data-edit="${m.id}">Edit</button>
-          <button class="btn" data-del="${m.id}">×</button>
+          <button class="btn" data-run="${m.id}" ${state.terminals.size ? "" : "disabled"}>${t("runOnActive")}</button>
+          <button class="btn" data-edit="${m.id}">${t("edit")}</button>
+          <button class="btn" data-del="${m.id}">${t("delete")}</button>
         </div>
       </div>`)
       .join("");
@@ -953,26 +962,26 @@ function renderNetwork(main: HTMLElement) {
   main.innerHTML = `
     <div class="view">
       <div class="view-head">
-        <strong>Network Tools</strong>
-        <span class="hint">also drivable by the AI copilot →</span>
+        <strong>${t("networkTools")}</strong>
+        <span class="hint">${t("networkHint")}</span>
       </div>
       <div class="netbar">
         <select id="net-tool">
-          <option value="ping">ping</option>
-          <option value="portScan">port scan</option>
-          <option value="wakeOnLan">wake-on-LAN</option>
-          <option value="dnsLookup">DNS lookup</option>
-          <option value="traceroute">traceroute</option>
+          <option value="ping">${t("ping")}</option>
+          <option value="portScan">${t("portScan")}</option>
+          <option value="wakeOnLan">${t("wakeOnLan")}</option>
+          <option value="dnsLookup">${t("dnsLookup")}</option>
+          <option value="traceroute">${t("traceroute")}</option>
         </select>
-        <input id="net-target" placeholder="10.0.0.11  ·  web-01  ·  00:11:22:33:44:55"/>
-        <button class="btn primary" id="net-run" ${state.netRunning ? "disabled" : ""}>Run</button>
-        <button class="btn" id="net-ai">↳ Ask AI about last result</button>
+        <input id="net-target" placeholder="${t("netTargetPlaceholder")}"/>
+        <button class="btn primary" id="net-run" ${state.netRunning ? "disabled" : ""}>${t("run")}</button>
+        <button class="btn" id="net-ai">${t("askAiAboutLast")}</button>
       </div>
       <div class="netlog" id="net-log"></div>
     </div>`;
   const log = document.getElementById("net-log")!;
   if (!state.netResults.length) {
-    log.innerHTML = `<div class="hint" style="padding:16px">Run a tool, or just ask the copilot: “ping 10.0.0.11”.</div>`;
+    log.innerHTML = `<div class="hint" style="padding:16px">${t("noNetResults")}</div>`;
   } else {
     log.innerHTML = state.netResults
       .map(
@@ -1019,16 +1028,16 @@ function renderHistory(main: HTMLElement) {
   main.innerHTML = `
     <div class="view">
       <div class="view-head">
-        <strong>Command History</strong>
+        <strong>${t("commandHistory")}</strong>
         <div class="spacer"></div>
-        <input id="hist-filter" value="${escapeAttr(state.historyFilter)}" placeholder="filter…"/>
-        <button class="btn" id="hist-clear">Clear</button>
+        <input id="hist-filter" value="${escapeAttr(state.historyFilter)}" placeholder="${t("filter")}"/>
+        <button class="btn" id="hist-clear">${t("clear")}</button>
       </div>
       <div class="hlist" id="hlist"></div>
     </div>`;
   const list = document.getElementById("hlist")!;
   if (!rows.length) {
-    list.innerHTML = `<div class="hint" style="padding:16px">No history yet. Run commands in a terminal.</div>`;
+    list.innerHTML = `<div class="hint" style="padding:16px">${t("noHistory")}</div>`;
   } else {
     list.innerHTML = rows
       .map((h) => {
@@ -1179,27 +1188,31 @@ function openSettingsModal() {
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
   backdrop.innerHTML = `<div class="modal">
-    <h3>Settings</h3>
-    <div class="field"><label>AI Engine</label><select id="s-engine">
+    <h3>${t("settingsTitle")}</h3>
+    <div class="field"><label>${t("language")}</label><select id="s-locale">
+      <option value="en" ${s.locale === "en" ? "selected" : ""}>${t("english")}</option>
+      <option value="zh" ${s.locale === "zh" ? "selected" : ""}>${t("chinese")}</option>
+    </select></div>
+    <div class="field"><label>${t("engine")}</label><select id="s-engine">
       <option value="mock" ${s.engine === "mock" ? "selected" : ""}>Mock (offline rule engine)</option>
       <option value="dsh" ${s.engine === "dsh" ? "selected" : ""}>DeepSeek Harness (dsh sidecar)</option>
       <option value="deepseekDirect" ${s.engine === "deepseekDirect" ? "selected" : ""}>DeepSeek Direct API</option>
     </select></div>
-    <div class="field"><label>Model</label><input id="s-model" value="${escapeAttr(s.model)}"/></div>
-    <div class="field"><label>Base URL</label><input id="s-base" value="${escapeAttr(s.baseUrl)}" placeholder="https://api.deepseek.com/v1"/></div>
-    <div class="field"><label>Approval Policy</label><select id="s-policy">
+    <div class="field"><label>${t("model")}</label><input id="s-model" value="${escapeAttr(s.model)}"/></div>
+    <div class="field"><label>${t("baseUrl")}</label><input id="s-base" value="${escapeAttr(s.baseUrl)}" placeholder="https://api.deepseek.com/v1"/></div>
+    <div class="field"><label>${t("approvalPolicy")}</label><select id="s-policy">
       <option value="askAlways" ${s.approvalPolicy === "askAlways" ? "selected" : ""}>Ask always</option>
       <option value="autoSafe" ${s.approvalPolicy === "autoSafe" ? "selected" : ""}>Auto safe, ask caution</option>
       <option value="autoCaution" ${s.approvalPolicy === "autoCaution" ? "selected" : ""}>Auto safe+caution, ask dangerous</option>
       <option value="yolo" ${s.approvalPolicy === "yolo" ? "selected" : ""}>YOLO (run all, gate dangerous)</option>
     </select></div>
-    <div class="field checkbox"><label><input type="checkbox" id="s-allow-dangerous" ${s.allowDangerous ? "checked" : ""}/> Allow dangerous after approval</label></div>
-    <div class="field"><label>Approval timeout (s)</label><input id="s-timeout" type="number" value="${s.approvalTimeoutSecs}"/></div>
-    <div class="field checkbox"><label><input type="checkbox" id="s-strict" ${s.strictHostKeyChecking ? "checked" : ""}/> Strict host key checking</label></div>
-    <div class="field"><label>Font size</label><input id="s-fontsize" type="number" value="${s.fontSize}"/></div>
+    <div class="field checkbox"><label><input type="checkbox" id="s-allow-dangerous" ${s.allowDangerous ? "checked" : ""}/> ${t("allowDangerous")}</label></div>
+    <div class="field"><label>${t("approvalTimeout")}</label><input id="s-timeout" type="number" value="${s.approvalTimeoutSecs}"/></div>
+    <div class="field checkbox"><label><input type="checkbox" id="s-strict" ${s.strictHostKeyChecking ? "checked" : ""}/> ${t("strictHostKey")}</label></div>
+    <div class="field"><label>${t("terminalFontSize")}</label><input id="s-fontsize" type="number" value="${s.fontSize}"/></div>
     <div class="actions">
-      <button id="s-cancel">Cancel</button>
-      <button class="primary" id="s-save">Save</button>
+      <button id="s-cancel">${t("cancel")}</button>
+      <button class="primary" id="s-save">${t("save")}</button>
     </div>
   </div>`;
   document.body.appendChild(backdrop);
@@ -1210,6 +1223,7 @@ function openSettingsModal() {
   backdrop.querySelector<HTMLButtonElement>("#s-save")!.onclick = async () => {
     const updated: Settings = {
       ...s,
+      locale: val(backdrop, "#s-locale") as Locale,
       engine: val(backdrop, "#s-engine") as any,
       model: val(backdrop, "#s-model"),
       baseUrl: val(backdrop, "#s-base"),
@@ -1221,14 +1235,16 @@ function openSettingsModal() {
     };
     await api.saveSettings(updated);
     state.settings = updated;
+    setLocale(updated.locale);
     backdrop.remove();
+    renderTopbar();
   };
 }
 
 // --- Tunnel / Macro modals ------------------------------------------------
 
 function openTunnelModal(existing: Tunnel | null) {
-  const t: Tunnel =
+  const tun: Tunnel =
     existing ?? {
       id: "",
       name: "",
@@ -1245,24 +1261,24 @@ function openTunnelModal(existing: Tunnel | null) {
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
   backdrop.innerHTML = `<div class="modal">
-    <h3>${existing ? "Edit Tunnel" : "New Tunnel"}</h3>
-    <div class="field"><label>Name</label><input id="t-name" value="${escapeAttr(t.name)}"/></div>
-    <div class="field"><label>Host</label><select id="t-host">${state.profiles
-      .map((p) => `<option value="${p.id}" ${p.id === t.profileId ? "selected" : ""}>${escapeHtml(p.name)}</option>`)
+    <h3>${existing ? t("editTunnel") : t("newTunnel")}</h3>
+    <div class="field"><label>${t("tunnelName")}</label><input id="t-name" value="${escapeAttr(tun.name)}"/></div>
+    <div class="field"><label>${t("sftpHost")}</label><select id="t-host">${state.profiles
+      .map((p) => `<option value="${p.id}" ${p.id === tun.profileId ? "selected" : ""}>${escapeHtml(p.name)}</option>`)
       .join("")}</select></div>
-    <div class="field"><label>Kind</label><select id="t-kind">
-      <option value="local" ${t.kind === "local" ? "selected" : ""}>Local (L)</option>
-      <option value="remote" ${t.kind === "remote" ? "selected" : ""}>Remote (R)</option>
-      <option value="dynamic" ${t.kind === "dynamic" ? "selected" : ""}>Dynamic SOCKS (D)</option>
+    <div class="field"><label>${t("tunnelKind")}</label><select id="t-kind">
+      <option value="local" ${tun.kind === "local" ? "selected" : ""}>${t("localL")}</option>
+      <option value="remote" ${tun.kind === "remote" ? "selected" : ""}>${t("remoteR")}</option>
+      <option value="dynamic" ${tun.kind === "dynamic" ? "selected" : ""}>${t("dynamicD")}</option>
     </select></div>
-    <div class="field"><label>Bind address</label><input id="t-bind" value="${escapeAttr(t.bindAddress)}"/></div>
-    <div class="field"><label>Local port</label><input id="t-lport" type="number" value="${t.localPort}"/></div>
-    <div class="field" id="t-remote-field"><label>Remote host:port</label>
-      <div style="display:flex;gap:6px"><input id="t-rhost" value="${escapeAttr(t.remoteHost)}"/><input id="t-rport" type="number" value="${t.remotePort}"/></div>
+    <div class="field"><label>${t("bindAddress")}</label><input id="t-bind" value="${escapeAttr(tun.bindAddress)}"/></div>
+    <div class="field"><label>${t("localPort")}</label><input id="t-lport" type="number" value="${tun.localPort}"/></div>
+    <div class="field" id="t-remote-field"><label>${t("remoteHostPort")}</label>
+      <div style="display:flex;gap:6px"><input id="t-rhost" value="${escapeAttr(tun.remoteHost)}"/><input id="t-rport" type="number" value="${tun.remotePort}"/></div>
     </div>
     <div class="actions">
-      <button id="t-cancel">Cancel</button>
-      <button class="primary" id="t-save">Save</button>
+      <button id="t-cancel">${t("cancel")}</button>
+      <button class="primary" id="t-save">${t("save")}</button>
     </div>
   </div>`;
   document.body.appendChild(backdrop);
@@ -1279,7 +1295,7 @@ function openTunnelModal(existing: Tunnel | null) {
   (backdrop.querySelector<HTMLButtonElement>("#t-cancel"))!.onclick = () => backdrop.remove();
   (backdrop.querySelector<HTMLButtonElement>("#t-save"))!.onclick = async () => {
     const updated: Tunnel = {
-      ...t,
+      ...tun,
       name: val(backdrop, "#t-name"),
       profileId: val(backdrop, "#t-host"),
       kind: val(backdrop, "#t-kind") as Tunnel["kind"],
@@ -1287,7 +1303,7 @@ function openTunnelModal(existing: Tunnel | null) {
       localPort: parseInt(val(backdrop, "#t-lport") || "0", 10),
       remoteHost: val(backdrop, "#t-rhost"),
       remotePort: parseInt(val(backdrop, "#t-rport") || "0", 10),
-      status: t.status || "stopped",
+      status: tun.status || "stopped",
     };
     await api.saveTunnel(updated);
     state.tunnels = await api.listTunnels();
@@ -1309,15 +1325,15 @@ function openMacroModal(existing: Macro | null) {
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
   backdrop.innerHTML = `<div class="modal">
-    <h3>${existing ? "Edit Macro" : "New Macro"}</h3>
-    <div class="field"><label>Name</label><input id="m-name" value="${escapeAttr(m.name)}"/></div>
-    <div class="field"><label>Steps (one keystroke block per line; \\n is Enter)</label>
+    <h3>${existing ? t("editMacro") : t("newMacro")}</h3>
+    <div class="field"><label>${t("tunnelName")}</label><input id="m-name" value="${escapeAttr(m.name)}"/></div>
+    <div class="field"><label>${t("macroSteps")}</label>
       <textarea id="m-steps" style="min-height:120px;font-family:var(--mono)">${escapeHtml(m.steps.join("\n"))}</textarea>
     </div>
-    <div class="field"><label>Shortcut (optional, e.g. Ctrl+Shift+1)</label><input id="m-shortcut" value="${escapeAttr(m.shortcut ?? "")}"/></div>
+    <div class="field"><label>${t("macroShortcut")}</label><input id="m-shortcut" value="${escapeAttr(m.shortcut ?? "")}"/></div>
     <div class="actions">
-      <button id="m-cancel">Cancel</button>
-      <button class="primary" id="m-save">Save</button>
+      <button id="m-cancel">${t("cancel")}</button>
+      <button class="primary" id="m-save">${t("save")}</button>
     </div>
   </div>`;
   document.body.appendChild(backdrop);

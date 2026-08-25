@@ -390,6 +390,9 @@ pub struct Settings {
     pub font_size: u32,
     #[serde(default = "default_theme")]
     pub theme: String,
+    /// UI language: "en" or "zh".
+    #[serde(default = "default_locale")]
+    pub locale: String,
     #[serde(default)]
     pub dsh_path: Option<String>,
     #[serde(default = "default_max_output")]
@@ -417,6 +420,9 @@ fn default_font_size() -> u32 {
 fn default_theme() -> String {
     "dark".to_string()
 }
+fn default_locale() -> String {
+    "en".to_string()
+}
 fn default_max_output() -> usize {
     24_000
 }
@@ -434,6 +440,7 @@ impl Default for Settings {
             font_family: default_font_family(),
             font_size: default_font_size(),
             theme: default_theme(),
+            locale: default_locale(),
             dsh_path: None,
             max_output_bytes: default_max_output(),
         }
