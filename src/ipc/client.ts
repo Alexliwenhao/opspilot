@@ -15,11 +15,18 @@ import type {
   AiSession,
   AiSessionDetail,
   EngineStatus,
+  HistoryEntry,
   HostFacts,
   HostProfile,
+  Macro,
   McpInfo,
+  NetToolKind,
+  NetToolResult,
   Settings,
+  SftpDownloadInfo,
+  SftpListing,
   TerminalInfo,
+  Tunnel,
 } from "./contract";
 import { CMD, EVT } from "./contract";
 
@@ -111,6 +118,45 @@ export const api = {
 
   hostFacts: (profileId: string) =>
     invoke<HostFacts>(CMD.hostFacts, { profileId }),
+
+  // --- SFTP ---------------------------------------------------------------
+  sftpList: (profileId: string, path: string) =>
+    invoke<SftpListing>(CMD.sftpList, { profileId, path }),
+  sftpDownload: (profileId: string, path: string) =>
+    invoke<SftpDownloadInfo>(CMD.sftpDownload, { profileId, path }),
+  sftpUpload: (profileId: string, destPath: string, bytes: number[]) =>
+    invoke<void>(CMD.sftpUpload, { profileId, destPath, bytes }),
+  sftpMkdir: (profileId: string, path: string) =>
+    invoke<void>(CMD.sftpMkdir, { profileId, path }),
+  sftpDelete: (profileId: string, path: string) =>
+    invoke<void>(CMD.sftpDelete, { profileId, path }),
+
+  // --- Tunnels ------------------------------------------------------------
+  listTunnels: () => invoke<Tunnel[]>(CMD.listTunnels),
+  saveTunnel: (tunnel: Tunnel) =>
+    invoke<void>(CMD.saveTunnel, { tunnel }),
+  deleteTunnel: (id: string) => invoke<void>(CMD.deleteTunnel, { id }),
+  toggleTunnel: (id: string) => invoke<void>(CMD.toggleTunnel, { id }),
+
+  // --- Macros -------------------------------------------------------------
+  listMacros: () => invoke<Macro[]>(CMD.listMacros),
+  saveMacro: (macro: Macro) => invoke<void>(CMD.saveMacro, { macro }),
+  deleteMacro: (id: string) => invoke<void>(CMD.deleteMacro, { id }),
+  runMacro: (id: string, termId: string | null) =>
+    invoke<void>(CMD.runMacro, { id, termId }),
+
+  // --- Network tools ------------------------------------------------------
+  runNetTool: (tool: NetToolKind, target: string) =>
+    invoke<NetToolResult>(CMD.runNetTool, { tool, target }),
+
+  // --- History ------------------------------------------------------------
+  listHistory: (profileId: string | null, limit = 100) =>
+    invoke<HistoryEntry[]>(CMD.listHistory, { profileId, limit }),
+  clearHistory: () => invoke<void>(CMD.clearHistory),
+
+  // --- Multi-execution (broadcast) ----------------------------------------
+  broadcastWrite: (data: number[]) =>
+    invoke<void>(CMD.broadcastWrite, { data }),
 };
 
 export { hasTauri, CMD, EVT };

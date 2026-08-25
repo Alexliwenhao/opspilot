@@ -480,6 +480,153 @@ pub struct HostFacts {
 }
 
 // ---------------------------------------------------------------------------
+// SFTP file browser
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum SftpEntryKind {
+    File,
+    Dir,
+    Symlink,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SftpEntry {
+    pub name: String,
+    pub kind: SftpEntryKind,
+    pub size: u64,
+    pub modified_at: i64,
+    pub mode: String,
+    pub owner: String,
+    pub group: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SftpListing {
+    pub profile_id: String,
+    pub path: String,
+    pub entries: Vec<SftpEntry>,
+    pub note: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SftpDownloadInfo {
+    pub download_id: String,
+    pub bytes: u64,
+    pub local_path: Option<String>,
+}
+
+// ---------------------------------------------------------------------------
+// SSH tunnels (port forwarding)
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum TunnelKind {
+    Local,
+    Remote,
+    Dynamic,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum TunnelStatus {
+    Stopped,
+    Starting,
+    Running,
+    Error,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Tunnel {
+    pub id: String,
+    pub name: String,
+    pub profile_id: String,
+    pub kind: TunnelKind,
+    pub bind_address: String,
+    pub local_port: u16,
+    pub remote_host: String,
+    pub remote_port: u16,
+    pub status: TunnelStatus,
+    pub message: Option<String>,
+    pub created_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TunnelStatusEvent {
+    pub tunnel_id: String,
+    pub status: TunnelStatus,
+    pub message: Option<String>,
+}
+
+// ---------------------------------------------------------------------------
+// Macros
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Macro {
+    pub id: String,
+    pub name: String,
+    pub steps: Vec<String>,
+    pub shortcut: Option<String>,
+    pub created_at: i64,
+    pub updated_at: i64,
+}
+
+// ---------------------------------------------------------------------------
+// Network tools
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub enum NetToolKind {
+    Ping,
+    PortScan,
+    WakeOnLan,
+    DnsLookup,
+    Traceroute,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NetToolResult {
+    pub tool: NetToolKind,
+    pub target: String,
+    pub ok: bool,
+    pub output: String,
+    pub duration_ms: u64,
+    pub collected_at: i64,
+}
+
+// ---------------------------------------------------------------------------
+// Terminal command history
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryEntry {
+    pub id: String,
+    pub profile_id: String,
+    pub term_id: String,
+    pub command: String,
+    pub exit_code: Option<i32>,
+    pub created_at: i64,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct HistoryAppendEvent {
+    pub entry: HistoryEntry,
+}
+
+// ---------------------------------------------------------------------------
 // Event name constants (must match src/ipc/contract.ts EVT)
 // ---------------------------------------------------------------------------
 
@@ -496,4 +643,7 @@ pub mod evt {
 
     pub const APPROVAL_REQUEST: &str = "approval:request";
     pub const APPROVAL_RESOLVED: &str = "approval:resolved";
+
+    pub const TUNNEL_STATUS: &str = "tunnel:status";
+    pub const HISTORY_APPEND: &str = "history:append";
 }

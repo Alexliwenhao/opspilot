@@ -16,10 +16,20 @@ tools exposed by an in-app **MCP server**.
 - **Connection manager** — grouped hosts, password / key-file / agent auth,
   colour tags, jump-host-friendly profiles.
 - **Multi-tab terminal** — one PTY per tab via `russh`, base64-streamed to
-  xterm.js, live resize.
+  xterm.js, live resize. **Multi-exec (broadcast)** mode types once into every
+  open terminal. **Search-in-scrollback** (`Ctrl+Shift+F`).
+- **SFTP file browser** — MobaXterm-style two-pane remote browser: navigate,
+  download, delete, per-host filesystem. (Mock filesystem in the browser
+  preview; real SFTP via the `ssh-real` build.)
+- **SSH tunnels manager** — local (L) / remote (R) / dynamic SOCKS (D) port
+  forwards with start/stop and live status.
+- **Macros** — record keystrokes from a terminal and replay them on any host.
+- **Network tools** — embedded ping, port scan, wake-on-LAN, DNS lookup,
+  traceroute — also drivable through the AI copilot.
+- **Command history** — searchable, per-host, click-to-rerun.
 - **AI copilot (right panel)** — chat with an LLM that can *plan* ops tasks,
-  call SSH tools (`ssh_exec`, `ssh_read_file`, …) through dsh, and analyse the
-  output for you.
+  call SSH tools (`ssh_exec`, `ssh_read_file`, …) through dsh, run the
+  embedded network tools, and analyse the output for you.
 - **Risk gate + human approval** — every AI-suggested command is classified
   `safe | caution | dangerous`; risky commands raise an in-UI approval card
   before anything runs. Four policies from *ask-always* to *yolo*.
@@ -153,7 +163,10 @@ opspilot/
   sandbox (process-execution restriction), so the native binary was **not**
   produced here. On a normal developer machine `npm run tauri dev/build`
   compiles and runs as described above.
-- 🔜 Not yet implemented (clearly scoped for next iterations): SFTP file
-  manager, live server monitoring dashboard, keyboard-interactive auth, jump
-  host chaining, command history/search in the terminal.
+- 🔜 Not yet implemented (clearly scoped for next iterations): real-SFTP
+  transport for the file browser (mock filesystem works in the browser preview),
+  live server monitoring dashboard, keyboard-interactive auth, jump-host
+  chaining. (Command history/search, SFTP browser, SSH tunnels, macros,
+  multi-execution, and network tools are now in the UI — backed by the mock
+  layer in the browser preview and by the `ssh-real` build on a real machine.)
 ```

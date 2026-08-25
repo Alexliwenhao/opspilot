@@ -200,6 +200,115 @@ export interface DiskUsage {
 }
 
 // ---------------------------------------------------------------------------
+// SFTP file browser
+// ---------------------------------------------------------------------------
+
+export type SftpEntryKind = "file" | "dir" | "symlink";
+
+export interface SftpEntry {
+  name: string;
+  kind: SftpEntryKind;
+  size: number;
+  /** Unix mtime, ms epoch. */
+  modifiedAt: number;
+  /** Octal mode, e.g. "0644". */
+  mode: string;
+  owner: string;
+  group: string;
+}
+
+export interface SftpListing {
+  profileId: string;
+  path: string;
+  entries: SftpEntry[];
+  /** Free-form note (e.g. "read-only mock" or a transport error). */
+  note: string | null;
+}
+
+export interface SftpDownloadInfo {
+  downloadId: string;
+  bytes: number;
+  /** Returned inline for the mock backend; real backend streams to disk. */
+  localPath: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// SSH tunnels (port forwarding)
+// ---------------------------------------------------------------------------
+
+export type TunnelKind = "local" | "remote" | "dynamic";
+
+export type TunnelStatus = "stopped" | "starting" | "running" | "error";
+
+export interface Tunnel {
+  id: string;
+  name: string;
+  profileId: string;
+  kind: TunnelKind;
+  /** Local bind address (L/D) — e.g. "127.0.0.1". */
+  bindAddress: string;
+  /** Local listen port (L/D). */
+  localPort: number;
+  /** Remote host (L/R) — destination. */
+  remoteHost: string;
+  /** Remote port (L/R). */
+  remotePort: number;
+  status: TunnelStatus;
+  message: string | null;
+  createdAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// Macros (recorded keystroke sequences)
+// ---------------------------------------------------------------------------
+
+export interface Macro {
+  id: string;
+  name: string;
+  /** Sequence of keystrokes to replay; each item is raw terminal input. */
+  steps: string[];
+  /** Optional keyboard shortcut hint, e.g. "Ctrl+Shift+1". */
+  shortcut: string | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// Network tools
+// ---------------------------------------------------------------------------
+
+export type NetToolKind =
+  | "ping"
+  | "portScan"
+  | "wakeOnLan"
+  | "dnsLookup"
+  | "traceroute";
+
+export interface NetToolResult {
+  tool: NetToolKind;
+  target: string;
+  ok: boolean;
+  /** Pretty-printed output lines. */
+  output: string;
+  durationMs: number;
+  collectedAt: number;
+}
+
+// ---------------------------------------------------------------------------
+// Terminal command history
+// ---------------------------------------------------------------------------
+
+export interface HistoryEntry {
+  id: string;
+  profileId: string;
+  termId: string;
+  command: string;
+  /** Exit code if known, else null. */
+  exitCode: number | null;
+  createdAt: number;
+}
+
+// ---------------------------------------------------------------------------
 // Tauri command names — use these constants, never raw strings.
 // ---------------------------------------------------------------------------
 
@@ -213,6 +322,7 @@ export const CMD = {
   writeTerminal: "write_terminal",
   resizeTerminal: "resize_terminal",
   listTerminals: "list_terminals",
+  broadcastWrite: "broadcast_write",
 
   aiNewSession: "ai_new_session",
   aiListSessions: "ai_list_sessions",
@@ -231,6 +341,27 @@ export const CMD = {
   engineStatus: "engine_status",
 
   hostFacts: "host_facts",
+
+  sftpList: "sftp_list",
+  sftpDownload: "sftp_download",
+  sftpUpload: "sftp_upload",
+  sftpMkdir: "sftp_mkdir",
+  sftpDelete: "sftp_delete",
+
+  listTunnels: "list_tunnels",
+  saveTunnel: "save_tunnel",
+  deleteTunnel: "delete_tunnel",
+  toggleTunnel: "toggle_tunnel",
+
+  listMacros: "list_macros",
+  saveMacro: "save_macro",
+  deleteMacro: "delete_macro",
+  runMacro: "run_macro",
+
+  runNetTool: "run_net_tool",
+
+  listHistory: "list_history",
+  clearHistory: "clear_history",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -250,6 +381,9 @@ export const EVT = {
 
   approvalRequest: "approval:request",
   approvalResolved: "approval:resolved",
+
+  tunnelStatus: "tunnel:status",
+  historyAppend: "history:append",
 } as const;
 
 /** `term:data` — terminal bytes, base64 encoded to survive JSON transport. */
@@ -301,4 +435,14 @@ export interface AiErrorEvent {
 export interface ApprovalResolvedEvent {
   requestId: string;
   decision: ApprovalDecision;
+}
+
+export interface TunnelStatusEvent {
+  tunnelId: string;
+  status: TunnelStatus;
+  message: string | null;
+}
+
+export interface HistoryAppendEvent {
+  entry: HistoryEntry;
 }
