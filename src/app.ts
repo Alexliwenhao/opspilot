@@ -493,14 +493,34 @@ async function connectHost(profileId: string) {
   const rows = 30;
   const info = await api.openTerminal({ profileId, cols, rows });
   const term = new Terminal({
-    fontFamily: state.settings?.fontFamily ?? "monospace",
+    fontFamily: state.settings?.fontFamily ?? '"JetBrains Mono", "SF Mono", monospace',
     fontSize: state.settings?.fontSize ?? 13,
+    lineHeight: 1.3,
     theme: {
-      background: "#000000",
-      foreground: "#d7dde5",
-      cursor: "#e0533d",
+      background: "#05070a",
+      foreground: "#e6eaf0",
+      cursor: "#4d9cf0",
+      cursorAccent: "#05070a",
+      black: "#1f2530",
+      red: "#f87171",
+      green: "#4ade80",
+      yellow: "#fbbf24",
+      blue: "#4d9cf0",
+      magenta: "#b07cf0",
+      cyan: "#22d3ee",
+      white: "#e6eaf0",
+      brightBlack: "#545d6b",
+      brightRed: "#fca5a5",
+      brightGreen: "#86efac",
+      brightYellow: "#fcd34d",
+      brightBlue: "#93c5fd",
+      brightMagenta: "#d8b4fe",
+      brightCyan: "#67e8f9",
+      brightWhite: "#f1f5f9",
     },
     cursorBlink: true,
+    cursorStyle: "bar",
+    allowProposedApi: true,
   });
   const fit = new FitAddon();
   const search = new SearchAddon();
