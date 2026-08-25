@@ -9,35 +9,44 @@ tools exposed by an in-app **MCP server**.
 > xterm.js** (frontend). The AI engine is pluggable: `dsh` sidecar, direct
 > DeepSeek API, or an offline mock rule engine.
 
----
+***
 
 ## What it does
 
-- **Connection manager** — grouped hosts, password / key-file / agent auth,
+* **Connection manager** — grouped hosts, password / key-file / agent auth,
   colour tags, jump-host-friendly profiles.
-- **Multi-tab terminal** — one PTY per tab via `russh`, base64-streamed to
+
+* **Multi-tab terminal** — one PTY per tab via `russh`, base64-streamed to
   xterm.js, live resize. **Multi-exec (broadcast)** mode types once into every
   open terminal. **Search-in-scrollback** (`Ctrl+Shift+F`).
-- **SFTP file browser** — MobaXterm-style two-pane remote browser: navigate,
+
+* **SFTP file browser** — MobaXterm-style two-pane remote browser: navigate,
   download, delete, per-host filesystem. (Mock filesystem in the browser
   preview; real SFTP via the `ssh-real` build.)
-- **SSH tunnels manager** — local (L) / remote (R) / dynamic SOCKS (D) port
+
+* **SSH tunnels manager** — local (L) / remote (R) / dynamic SOCKS (D) port
   forwards with start/stop and live status.
-- **Macros** — record keystrokes from a terminal and replay them on any host.
-- **Network tools** — embedded ping, port scan, wake-on-LAN, DNS lookup,
+
+* **Macros** — record keystrokes from a terminal and replay them on any host.
+
+* **Network tools** — embedded ping, port scan, wake-on-LAN, DNS lookup,
   traceroute — also drivable through the AI copilot.
-- **Command history** — searchable, per-host, click-to-rerun.
-- **AI copilot (right panel)** — chat with an LLM that can *plan* ops tasks,
+
+* **Command history** — searchable, per-host, click-to-rerun.
+
+* **AI copilot (right panel)** — chat with an LLM that can *plan* ops tasks,
   call SSH tools (`ssh_exec`, `ssh_read_file`, …) through dsh, run the
   embedded network tools, and analyse the output for you.
-- **Risk gate + human approval** — every AI-suggested command is classified
+
+* **Risk gate + human approval** — every AI-suggested command is classified
   `safe | caution | dangerous`; risky commands raise an in-UI approval card
   before anything runs. Four policies from *ask-always* to *yolo*.
-- **Internal MCP server** — exposes the SSH surface to `dsh` over
+
+* **Internal MCP server** — exposes the SSH surface to `dsh` over
   Streamable HTTP (loopback, random port, Bearer token), so the agent can be
   extended with any MCP tool.
 
----
+***
 
 ## Quick start
 
@@ -52,9 +61,11 @@ npm install
 npm run dev          # open the printed http://localhost:5173
 ```
 
-- The sidebar is seeded with 3 demo hosts.
-- Double-click a host → opens a simulated terminal (type `help`, `df -h`, …).
-- Right panel → start a session, ask e.g. *"check disk space"*, *"how much
+* The sidebar is seeded with 3 demo hosts.
+
+* Double-click a host → opens a simulated terminal (type `help`, `df -h`, …).
+
+* Right panel → start a session, ask e.g. *"check disk space"*, *"how much
   memory?"*, *"show uptime"*. The mock engine maps intent → command, raises an
   approval card for risky commands, and prints an analysis.
 
@@ -80,22 +91,22 @@ To ship a binary: `npm run tauri build` (or with `-- --features ssh-real`).
 > on machines / CI without a C compiler. Both expose the identical
 > `ssh::SshManager` surface; switch with the `ssh-real` Cargo feature.
 
----
+***
 
 ## AI engine setup
 
 In **Settings** (⚙ top-right) choose the engine:
 
-| Engine | Needs | Notes |
-|--------|-------|-------|
-| `mock` | nothing | Offline rule engine, demo only. |
-| `dsh` | `npx @deepseek-ai/dsh` + DeepSeek API key | The "DeepSeek harness" integration. dsh runs as a sidecar, we inject the MCP config pointing at OpsPilot's internal server. |
-| `deepseekDirect` | DeepSeek API key | Direct chat-completions call with the same tool schema. |
+| Engine           | Needs                                     | Notes                                                                                                                       |
+| ---------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `mock`           | nothing                                   | Offline rule engine, demo only.                                                                                             |
+| `dsh`            | `npx @deepseek-ai/dsh` + DeepSeek API key | The "DeepSeek harness" integration. dsh runs as a sidecar, we inject the MCP config pointing at OpsPilot's internal server. |
+| `deepseekDirect` | DeepSeek API key                          | Direct chat-completions call with the same tool schema.                                                                     |
 
 Set your API key in the Settings dialog — it is stored in the OS keychain
 (`keyring`), never written to disk in plaintext.
 
----
+***
 
 ## Architecture
 
@@ -122,7 +133,7 @@ Set your API key in the Settings dialog — it is stored in the OS keychain
 The TypeScript↔Rust contract lives in **`src/ipc/contract.ts`** and is mirrored
 by `src-tauri/src/protocol.rs`. Change one → change the other.
 
----
+***
 
 ## Project layout
 
@@ -149,24 +160,30 @@ opspilot/
       └─ engine/{mod,mock,deepseek,dsh}.rs
 ```
 
----
+***
 
 ## Status / verification notes
 
-- ✅ Frontend: `npm run build` (tsc type-check + vite bundle) passes; dev
+* ✅ Frontend: `npm run build` (tsc type-check + vite bundle) passes; dev
   server serves and transforms every module cleanly (validated in-browser ESM).
-- ✅ IPC contract, mock backend, risk gate, approval UI, AI panel wired and
+
+* ✅ IPC contract, mock backend, risk gate, approval UI, AI panel wired and
   type-checked.
-- ⚠️ Rust native build: the full Tauri app requires compiling crates whose
+
+* ⚠️ Rust native build: the full Tauri app requires compiling crates whose
   build scripts invoke a C toolchain (the `windows`/`tao`/`wry` GUI stack and
   `russh`'s crypto). Those build steps were blocked in the original build
   sandbox (process-execution restriction), so the native binary was **not**
   produced here. On a normal developer machine `npm run tauri dev/build`
   compiles and runs as described above.
-- 🔜 Not yet implemented (clearly scoped for next iterations): real-SFTP
+
+* 🔜 Not yet implemented (clearly scoped for next iterations): real-SFTP
   transport for the file browser (mock filesystem works in the browser preview),
   live server monitoring dashboard, keyboard-interactive auth, jump-host
   chaining. (Command history/search, SFTP browser, SSH tunnels, macros,
   multi-execution, and network tools are now in the UI — backed by the mock
   layer in the browser preview and by the `ssh-real` build on a real machine.)
+
 ```
+```
+
