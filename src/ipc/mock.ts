@@ -87,6 +87,7 @@ let settings: Settings = {
   fontFamily: "JetBrains Mono, Menlo, Consolas, monospace",
   fontSize: 13,
   theme: "dark",
+  locale: "en",
   dshPath: null,
   maxOutputBytes: 8000,
 };

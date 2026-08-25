@@ -149,6 +149,8 @@ export interface EngineStatus {
   needsApiKey: boolean;
 }
 
+export type Locale = "en" | "zh";
+
 export interface Settings {
   engine: EngineKind;
   model: string;
@@ -164,6 +166,8 @@ export interface Settings {
   fontFamily: string;
   fontSize: number;
   theme: "dark" | "light";
+  /** UI language. */
+  locale: Locale;
   /** Path to the dsh executable, or null to auto-detect via npx. */
   dshPath: string | null;
   /** Max bytes of command output handed back to the model. */

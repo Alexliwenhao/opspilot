@@ -20,7 +20,9 @@ import type {
   SftpEntry,
   SftpListing,
   Tunnel,
+  Locale,
 } from "./ipc/contract";
+import { t, setLocale } from "./i18n";
 
 type MainView =
   | "terminals"
@@ -99,33 +101,33 @@ export function mount(root: HTMLElement) {
   root.classList.add("app");
   root.innerHTML = `
     <div class="topbar">
-      <div class="logo">OpsPilot<span>AI MobaX</span></div>
+      <div class="logo">${t("brand")}<span>${t("brandSub")}</span></div>
       <div class="viewswitch" id="viewswitch">
-        <button class="vs active" data-view="terminals" title="Terminals">⌨ Terminals</button>
-        <button class="vs" data-view="sftp" title="SFTP file browser">📁 SFTP</button>
-        <button class="vs" data-view="tunnels" title="SSH tunnels">🚇 Tunnels</button>
-        <button class="vs" data-view="macros" title="Macros">⏺ Macros</button>
-        <button class="vs" data-view="network" title="Network tools">🛰 Network</button>
-        <button class="vs" data-view="history" title="Command history">🕘 History</button>
+        <button class="vs active" data-view="terminals" title="${t("viewTerminals")}">⌨ ${t("viewTerminals")}</button>
+        <button class="vs" data-view="sftp" title="${t("viewSftp")}">📁 ${t("viewSftp")}</button>
+        <button class="vs" data-view="tunnels" title="${t("viewTunnels")}">🚇 ${t("viewTunnels")}</button>
+        <button class="vs" data-view="macros" title="${t("viewMacros")}">⏺ ${t("viewMacros")}</button>
+        <button class="vs" data-view="network" title="${t("viewNetwork")}">🛰 ${t("viewNetwork")}</button>
+        <button class="vs" data-view="history" title="${t("viewHistory")}">🕘 ${t("viewHistory")}</button>
       </div>
       <div class="spacer"></div>
-      <button class="btn" id="broadcast-btn" title="Multi-exec: type once, run on every terminal">⇶ Multi-exec: off</button>
+      <button class="btn" id="broadcast-btn" title="${t("multiExec")}">⇶ ${t("multiExec")}: ${t("multiExecOff")}</button>
       <div class="engine" id="engine-badge">engine: …</div>
-      <button class="btn" id="settings-btn">⚙ Settings</button>
+      <button class="btn" id="settings-btn">⚙ ${t("settings")}</button>
     </div>
     <div class="sidebar">
-      <div class="head"><span>Connections</span><button class="btn" id="add-host">+ Host</button></div>
+      <div class="head"><span>${t("connections")}</span><button class="btn" id="add-host">${t("addHost")}</button></div>
       <div class="tree" id="tree"></div>
     </div>
     <div class="main" id="main"></div>
     <div class="aipanel">
-      <div class="head"><span>AI Copilot</span><button class="btn" id="new-session">+ Session</button></div>
+      <div class="head"><span>${t("aiCopilot")}</span><button class="btn" id="new-session">${t("newSession")}</button></div>
       <div class="messages" id="messages"></div>
       <div class="composer">
-        <textarea id="ai-input" placeholder="Ask the copilot… e.g. 'check disk space', 'ping 10.0.0.11', 'port scan web-01'"></textarea>
+        <textarea id="ai-input" placeholder="${t("askCopilot")}"></textarea>
         <div class="row">
-          <span class="hint" id="ai-hint">${hasTauri ? "connected to native shell" : "browser preview (mock backend)"}</span>
-          <button class="send" id="ai-send">Send</button>
+          <span class="hint" id="ai-hint">${hasTauri ? t("connectedNative") : t("browserPreview")}</span>
+          <button class="send" id="ai-send">${t("send")}</button>
         </div>
       </div>
     </div>
@@ -154,10 +156,12 @@ async function bootstrap() {
     state.tunnels = tunnels;
     state.macros = macros;
     state.history = history;
+    setLocale(settings.locale);
     renderEngine();
     renderTree();
     renderMain();
     renderMessages();
+    renderTopbar(); // re-render with chosen locale
   } catch (e) {
     console.error("bootstrap failed", e);
   }
@@ -334,6 +338,48 @@ function refitActive() {
   }
 }
 
+/** 切换语言后刷新所有静态文案（顶栏 + 主区）。 */
+function renderTopbar() {
+  const setText = (sel: string, txt: string) => {
+    const el = document.querySelector<HTMLElement>(sel);
+    if (el) el.textContent = txt;
+  };
+  const bc = document.getElementById("broadcast-btn");
+  if (bc) bc.textContent = `⇶ ${t("multiExec")}: ${state.broadcast ? t("multiExecOn") : t("multiExecOff")}`;
+  document.querySelectorAll<HTMLElement>("#viewswitch .vs").forEach((b) => {
+    const v = b.dataset.view as MainView;
+    const map: Record<MainView, string> = {
+      terminals: t("viewTerminals"),
+      sftp: t("viewSftp"),
+      tunnels: t("viewTunnels"),
+      macros: t("viewMacros"),
+      network: t("viewNetwork"),
+      history: t("viewHistory"),
+    };
+    const label = map[v];
+    const icons: Record<MainView, string> = {
+      terminals: "⌨", sftp: "📁", tunnels: "🚇", macros: "⏺", network: "🛰", history: "🕘",
+    };
+    b.title = label;
+    b.textContent = `${icons[v]} ${label}`;
+  });
+  const sb = document.getElementById("settings-btn");
+  if (sb) sb.textContent = `⚙ ${t("settings")}`;
+  const ah = document.getElementById("add-host");
+  if (ah) ah.textContent = t("addHost");
+  setText(".sidebar .head span", t("connections"));
+  setText(".aipanel .head span", t("aiCopilot"));
+  const ns = document.getElementById("new-session");
+  if (ns) ns.textContent = t("newSession");
+  const sd = document.getElementById("ai-send");
+  if (sd) sd.textContent = t("send");
+  const ai = document.getElementById("ai-input") as HTMLTextAreaElement | null;
+  if (ai) ai.placeholder = t("askCopilot");
+  const hint = document.getElementById("ai-hint");
+  if (hint) hint.textContent = hasTauri ? t("connectedNative") : t("browserPreview");
+  renderMain();
+}
+
 async function sendAi() {
   const input = document.getElementById("ai-input") as HTMLTextAreaElement;
   const text = input.value.trim();
@@ -424,9 +470,9 @@ function renderMain() {
 function renderTerminals(main: HTMLElement) {
   if (state.terminals.size === 0) {
     main.innerHTML = `<div class="empty">
-      <div style="font-size:32px">⌨</div>
-      <div>Select a host on the left to open a terminal</div>
-      <div style="font-size:11px">AI Copilot is on the right →  ·  Ctrl+Shift+F to search scrollback</div>
+      <div style="font-size:40px;opacity:0.4">⌨</div>
+      <div>${t("selectHostToOpen")}</div>
+      <div style="font-size:11px">${t("searchScrollback")}</div>
     </div>`;
     return;
   }
@@ -655,8 +701,8 @@ function renderSftp(main: HTMLElement) {
           .map((p) => `<option value="${p.id}" ${p.id === state.sftpProfileId ? "selected" : ""}>${escapeHtml(p.name)}</option>`)
           .join("")}</select>
         <input id="sftp-path" value="${escapeAttr(state.sftpPath)}" placeholder="/"/>
-        <button class="btn" id="sftp-go">Go</button>
-        <button class="btn" id="sftp-up">↑ Up</button>
+        <button class="btn" id="sftp-go">${t("go")}</button>
+        <button class="btn" id="sftp-up">${t("up")}</button>
         <span class="hint">${escapeHtml(host)}</span>
       </div>
       <div class="sftp-grid" id="sftp-grid"></div>
