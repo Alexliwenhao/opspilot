@@ -100,28 +100,114 @@ const state: AppState = {
 export function mount(root: HTMLElement) {
   root.classList.add("app");
   root.innerHTML = `
-    <div class="topbar">
-      <div class="logo">${t("brand")}<span>${t("brandSub")}</span></div>
-      <div class="viewswitch" id="viewswitch">
-        <button class="vs active" data-view="terminals" title="${t("viewTerminals")}">⌨ ${t("viewTerminals")}</button>
-        <button class="vs" data-view="sftp" title="${t("viewSftp")}">📁 ${t("viewSftp")}</button>
-        <button class="vs" data-view="tunnels" title="${t("viewTunnels")}">🚇 ${t("viewTunnels")}</button>
-        <button class="vs" data-view="macros" title="${t("viewMacros")}">⏺ ${t("viewMacros")}</button>
-        <button class="vs" data-view="network" title="${t("viewNetwork")}">🛰 ${t("viewNetwork")}</button>
-        <button class="vs" data-view="history" title="${t("viewHistory")}">🕘 ${t("viewHistory")}</button>
+    <!-- Menu bar -->
+    <div class="menubar">
+      <div class="brand">◆ ${t("brand")}</div>
+      <div class="menu" data-menu="session">${t("menuSession")}
+        <div class="sub">
+          <div class="sub-item" data-action="new-terminal">▸ ${t("menuNewTerminal")}</div>
+          <div class="sub-item" data-action="new-session">▸ ${t("menuNewSession")}</div>
+          <div class="sub-sep"></div>
+          <div class="sub-item" data-action="close-tab">✕ ${t("menuCloseTab")}</div>
+          <div class="sub-item" data-action="close-all">✕✕ ${t("menuCloseAll")}</div>
+        </div>
+      </div>
+      <div class="menu" data-menu="servers">${t("menuServers")}
+        <div class="sub">
+          <div class="sub-item" data-action="add-host">＋ ${t("menuAddConnection")}</div>
+        </div>
+      </div>
+      <div class="menu" data-menu="tools">${t("menuTools")}
+        <div class="sub">
+          <div class="sub-item" data-view="tunnels">🚇 ${t("viewTunnels")}</div>
+          <div class="sub-item" data-view="macros">⏺ ${t("viewMacros")}</div>
+          <div class="sub-item" data-view="network">🛰 ${t("viewNetwork")}</div>
+          <div class="sub-item" data-view="history">🕘 ${t("viewHistory")}</div>
+        </div>
+      </div>
+      <div class="menu" data-menu="games">${t("menuGames")}</div>
+      <div class="menu" data-menu="sessions">${t("menuSessions")}
+        <div class="sub">
+          <div class="sub-item" data-view="terminals">⌨ ${t("viewTerminals")}</div>
+          <div class="sub-item" data-view="sftp">📁 ${t("viewSftp")}</div>
+        </div>
+      </div>
+      <div class="menu" data-menu="view">${t("menuView")}</div>
+      <div class="menu" data-menu="split">${t("menuSplit")}</div>
+      <div class="menu" data-menu="multiexec">${t("menuMultiExec")}
+        <div class="sub">
+          <div class="sub-item" data-toggle="broadcast" id="menu-broadcast">▸ ${t("menuMultiExecOff")}</div>
+        </div>
+      </div>
+      <div class="menu" data-menu="tunneling">${t("menuTunneling")}</div>
+      <div class="menu" data-menu="packages">${t("menuPackages")}</div>
+      <div class="menu" data-menu="settings">${t("menuSettings")}
+        <div class="sub">
+          <div class="sub-item" data-action="open-settings">⚙ ${t("menuPreferences")}</div>
+        </div>
+      </div>
+      <div class="menu" data-menu="help">${t("menuHelp")}
+        <div class="sub">
+          <div class="sub-item" data-action="about">ⓘ ${t("menuAbout")}</div>
+        </div>
       </div>
       <div class="spacer"></div>
-      <button class="btn" id="broadcast-btn" title="${t("multiExec")}">⇶ ${t("multiExec")}: ${t("multiExecOff")}</button>
-      <div class="engine" id="engine-badge">engine: …</div>
-      <button class="btn" id="settings-btn">⚙ ${t("settings")}</button>
+      <div class="tools">
+        <button class="tbtn" id="tool-new" title="${t("menuNewTerminal")}">＋</button>
+        <button class="tbtn" id="tool-broadcast" title="${t("multiExec")}">⇶</button>
+        <button class="tbtn" id="tool-settings" title="${t("settings")}">⚙</button>
+      </div>
     </div>
-    <div class="sidebar">
-      <div class="head"><span>${t("connections")}</span><button class="btn" id="add-host">${t("addHost")}</button></div>
-      <div class="tree" id="tree"></div>
+
+    <!-- Quick Connect bar -->
+    <div class="quickbar">
+      <span class="qlabel">${t("quickConnect")}:</span>
+      <input id="quick-input" placeholder="user@host:port"/>
+      <button class="qbtn" id="quick-go">${t("go")}</button>
+      <div class="qspacer"></div>
+      <span class="qinfo" id="engine-info">…</span>
     </div>
+
+    <!-- SFTP panel (left) -->
+    <div class="sftp-panel">
+      <div class="sftp-head">
+        <span>${t("connections")}</span>
+        <div class="mini">
+          <button id="add-host" title="${t("addHost")}">＋</button>
+        </div>
+      </div>
+      <div class="conn-list" id="conn-list"></div>
+      <div class="sftp-head" style="border-top:1px solid var(--border-soft)">
+        <span>${t("fileBrowser")}</span>
+        <div class="mini">
+          <button id="sftp-up" title="${t("up")}">↑</button>
+          <button id="sftp-refresh" title="${t("refresh")}">↻</button>
+        </div>
+      </div>
+      <div class="file-toolbar">
+        <button title="${t("up")}" data-sftp-tool="up">↑</button>
+        <button title="${t("refresh")}" data-sftp-tool="refresh">↻</button>
+        <button title="${t("upload")}" data-sftp-tool="upload">↑↓</button>
+      </div>
+      <div class="file-list" id="file-list"></div>
+      <div class="sftp-foot">
+        <label><input type="checkbox" id="follow-folder"/> ${t("followTerminalFolder")}</label>
+        <label><input type="checkbox" id="remote-mon"/> ${t("remoteMonitoring")}</label>
+      </div>
+    </div>
+
+    <!-- Main area -->
     <div class="main" id="main"></div>
-    <div class="aipanel">
-      <div class="head"><span>${t("aiCopilot")}</span><button class="btn" id="new-session">${t("newSession")}</button></div>
+
+    <!-- AI panel (right) -->
+    <div class="ai-panel">
+      <div class="ai-head">
+        <span>${t("aiAssistant")}</span>
+        <div class="actions">
+          <button id="new-session" title="${t("newSession")}">＋</button>
+        </div>
+      </div>
+      <div class="ai-meta" id="ai-meta"></div>
       <div class="messages" id="messages"></div>
       <div class="composer">
         <textarea id="ai-input" placeholder="${t("askCopilot")}"></textarea>
@@ -129,6 +215,19 @@ export function mount(root: HTMLElement) {
           <span class="hint" id="ai-hint">${hasTauri ? t("connectedNative") : t("browserPreview")}</span>
           <button class="send" id="ai-send">${t("send")}</button>
         </div>
+      </div>
+    </div>
+
+    <!-- Status bar -->
+    <div class="statusbar">
+      <div class="sleft">
+        <div class="sitem"><span class="dot"></span>${t("statusReady")}</div>
+        <div class="sitem dim" id="sb-term-count">0 ${t("statusTerminals")}</div>
+        <div class="sitem dim" id="sb-broadcast">${t("multiExec")}: ${t("multiExecOff")}</div>
+      </div>
+      <div class="sspacer"></div>
+      <div class="sright">
+        <span class="kbd">${t("statusKbd")}</span>
       </div>
     </div>
   `;
@@ -158,9 +257,11 @@ async function bootstrap() {
     state.history = history;
     setLocale(settings.locale);
     renderEngine();
-    renderTree();
+    renderConnList();
+    renderFileList();
     renderMain();
     renderMessages();
+    renderStatusbar();
     renderTopbar(); // re-render with chosen locale
   } catch (e) {
     console.error("bootstrap failed", e);
@@ -262,7 +363,8 @@ function wireEvents() {
 
 function wireControls() {
   document.getElementById("add-host")!.onclick = () => openHostModal(null);
-  document.getElementById("settings-btn")!.onclick = () => openSettingsModal();
+  document.getElementById("tool-settings")!.onclick = () => openSettingsModal();
+  document.getElementById("settings-btn")?.addEventListener("click", () => openSettingsModal());
   document.getElementById("new-session")!.onclick = async () => {
     const res = await api.aiNewSession(state.activeTerm ?? null);
     state.activeSession = res.sessionId;
@@ -272,29 +374,92 @@ function wireControls() {
   const input = document.getElementById("ai-input") as HTMLTextAreaElement;
   document.getElementById("ai-send")!.onclick = () => sendAi();
   input.addEventListener("keydown", (e) => {
-    // Enter sends; Shift+Enter inserts a newline.
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendAi();
     }
   });
 
-  // View switcher (topbar).
-  document.getElementById("viewswitch")!.addEventListener("click", (e) => {
-    const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-view]");
-    if (!btn) return;
-    switchView(btn.dataset.view as MainView);
+  // Menu bar — view switches
+  document.querySelectorAll<HTMLElement>(".menubar [data-view]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const view = el.dataset.view as MainView;
+      if (view) switchView(view);
+    });
   });
 
-  // Multi-execution toggle.
-  document.getElementById("broadcast-btn")!.onclick = () => {
-    state.broadcast = !state.broadcast;
-    const b = document.getElementById("broadcast-btn")!;
-    b.textContent = `⇶ Multi-exec: ${state.broadcast ? "on" : "off"}`;
-    b.classList.toggle("on", state.broadcast);
-  };
+  // Menu bar — toggle broadcast
+  document.querySelectorAll<HTMLElement>("[data-toggle='broadcast']").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleBroadcast();
+    });
+  });
 
-  // Global shortcuts: Ctrl+Shift+F search-in-terminal, Ctrl+Shift+R history.
+  // Menu bar — actions
+  document.querySelectorAll<HTMLElement>("[data-action]").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const action = el.dataset.action;
+      if (action === "add-host") openHostModal(null);
+      else if (action === "open-settings") openSettingsModal();
+      else if (action === "new-terminal") {
+        if (state.profiles[0]) openTerminal(state.profiles[0].id);
+      } else if (action === "close-tab") {
+        if (state.activeTerm) closeTerminal(state.activeTerm);
+      }
+    });
+  });
+
+  // Toolbar buttons
+  document.getElementById("tool-new")!.onclick = () => {
+    if (state.profiles[0]) openTerminal(state.profiles[0].id);
+  };
+  document.getElementById("tool-broadcast")!.onclick = () => toggleBroadcast();
+
+  // Quick connect
+  document.getElementById("quick-go")!.onclick = () => {
+    const qinput = document.getElementById("quick-input") as HTMLInputElement;
+    const val = qinput.value.trim();
+    if (!val) return;
+    openQuickConnect(val);
+  };
+  document.getElementById("quick-input")!.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const qinput = document.getElementById("quick-input") as HTMLInputElement;
+      const val = qinput.value.trim();
+      if (val) openQuickConnect(val);
+    }
+  });
+
+  // SFTP panel controls
+  document.getElementById("sftp-up")!.onclick = () => {
+    if (state.sftpPath && state.sftpPath !== "/") {
+      const parts = state.sftpPath.split("/").filter(Boolean);
+      parts.pop();
+      state.sftpPath = "/" + parts.join("/");
+      void loadSftp();
+    }
+  };
+  document.getElementById("sftp-refresh")!.onclick = () => {
+    if (state.sftpProfileId) void loadSftp();
+  };
+  document.querySelectorAll<HTMLElement>("[data-sftp-tool]").forEach((btn) => {
+    btn.onclick = () => {
+      const tool = btn.dataset.sftpTool;
+      if (tool === "up" && state.sftpPath && state.sftpPath !== "/") {
+        const parts = state.sftpPath.split("/").filter(Boolean);
+        parts.pop();
+        state.sftpPath = "/" + parts.join("/");
+        void loadSftp();
+      } else if (tool === "refresh" && state.sftpProfileId) {
+        void loadSftp();
+      }
+    };
+  });
+
+  // Global shortcuts
   document.addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "f") {
       const v = state.terminals.get(state.activeTerm ?? "");
@@ -306,12 +471,62 @@ function wireControls() {
   });
 }
 
+function toggleBroadcast() {
+  state.broadcast = !state.broadcast;
+  const btn = document.getElementById("tool-broadcast");
+  if (btn) btn.classList.toggle("active", state.broadcast);
+  const menuItem = document.getElementById("menu-broadcast");
+  if (menuItem) menuItem.textContent = state.broadcast ? t("menuMultiExecOn") : t("menuMultiExecOff");
+  renderStatusbar();
+}
+
+async function openQuickConnect(target: string) {
+  // Parse user@host:port
+  let user = "root";
+  let host = target;
+  let port = 22;
+  const atIdx = target.indexOf("@");
+  if (atIdx >= 0) {
+    user = target.substring(0, atIdx);
+    const rest = target.substring(atIdx + 1);
+    const colonIdx = rest.lastIndexOf(":");
+    if (colonIdx >= 0) {
+      host = rest.substring(0, colonIdx);
+      port = parseInt(rest.substring(colonIdx + 1), 10) || 22;
+    } else {
+      host = rest;
+    }
+  } else {
+    const colonIdx = target.lastIndexOf(":");
+    if (colonIdx >= 0) {
+      host = target.substring(0, colonIdx);
+      port = parseInt(target.substring(colonIdx + 1), 10) || 22;
+    }
+  }
+  // Check if host already exists
+  const existing = state.profiles.find((p) => p.host === host && p.port === port);
+  if (existing) {
+    openTerminal(existing.id);
+    return;
+  }
+  // Create new profile
+  const profile: HostProfile = {
+    id: `quick-${Date.now()}`,
+    name: `${user}@${host}`,
+    host,
+    port,
+    username: user,
+    auth: "password",
+    savedPassword: null,
+  };
+  await api.saveProfile(profile);
+  state.profiles = await api.listProfiles();
+  renderConnList();
+  openTerminal(profile.id);
+}
+
 function switchView(view: MainView) {
   state.view = view;
-  document.querySelectorAll<HTMLElement>("#viewswitch .vs").forEach((b) => {
-    b.classList.toggle("active", b.dataset.view === view);
-  });
-  // Load data lazily for the chosen view.
   void (async () => {
     if (view === "tunnels") state.tunnels = await api.listTunnels();
     if (view === "macros") state.macros = await api.listMacros();
@@ -321,7 +536,6 @@ function switchView(view: MainView) {
       await loadSftp();
     }
     renderMain();
-    // Re-fit terminal when returning to it.
     if (view === "terminals") setTimeout(refitActive, 30);
   })();
 }
@@ -338,7 +552,78 @@ function refitActive() {
   }
 }
 
-/** 切换语言后刷新所有静态文案（顶栏 + 主区）。 */
+/** Render connection list in SFTP panel (left sidebar). */
+function renderConnList() {
+  const list = document.getElementById("conn-list");
+  if (!list) return;
+  if (!state.profiles.length) {
+    list.innerHTML = `<div class="hint" style="padding:8px 10px">${t("noConnections")}</div>`;
+    return;
+  }
+  list.innerHTML = state.profiles
+    .map((p) => {
+      const active = state.activeTerm && state.terminals.get(state.activeTerm)?.profileId === p.id;
+      return `<div class="conn-item ${active ? "active" : ""}" data-profile="${p.id}">
+        <span class="cidot" style="background:${active ? "#fff" : "#6a9955"}"></span>
+        <span>${escapeHtml(p.name)}</span>
+      </div>`;
+    })
+    .join("");
+  list.querySelectorAll<HTMLElement>(".conn-item").forEach((el) => {
+    el.onclick = () => {
+      const pid = el.dataset.profile!;
+      openTerminal(pid);
+    };
+  });
+}
+
+/** Render file list in SFTP panel. */
+function renderFileList() {
+  const list = document.getElementById("file-list");
+  if (!list) return;
+  if (!state.sftpEntries.length) {
+    list.innerHTML = `<div class="hint" style="padding:8px 10px">${t("emptyDir")}</div>`;
+    return;
+  }
+  list.innerHTML = state.sftpEntries
+    .map((e) => {
+      const icon = e.kind === "dir" ? "📁" : e.kind === "symlink" ? "🔗" : "📄";
+      const size = e.kind === "dir" ? "" : formatSize(e.size);
+      return `<div class="frow">
+        <span class="ficon">${icon}</span>
+        <span class="fname">${escapeHtml(e.name)}</span>
+        <span class="fsize">${size}</span>
+      </div>`;
+    })
+    .join("");
+  list.querySelectorAll<HTMLElement>(".frow").forEach((row, i) => {
+    row.onclick = () => {
+      const entry = state.sftpEntries[i];
+      if (entry && entry.kind === "dir") {
+        const newPath = state.sftpPath === "/" ? "/" + entry.name : state.sftpPath + "/" + entry.name;
+        state.sftpPath = newPath;
+        void loadSftp();
+      }
+    };
+  });
+}
+
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return bytes + " B";
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  if (bytes < 1024 * 1024 * 1024) return (bytes / 1024 / 1024).toFixed(1) + " MB";
+  return (bytes / 1024 / 1024 / 1024).toFixed(1) + " GB";
+}
+
+/** Render bottom status bar. */
+function renderStatusbar() {
+  const count = document.getElementById("sb-term-count");
+  if (count) count.textContent = `${state.terminals.size} ${t("statusTerminals")}`;
+  const bc = document.getElementById("sb-broadcast");
+  if (bc) bc.textContent = `${t("multiExec")}: ${state.broadcast ? t("multiExecOn") : t("multiExecOff")}`;
+}
+
+/** Re-render dynamic text after language change. */
 function renderTopbar() {
   const setText = (sel: string, txt: string) => {
     const el = document.querySelector<HTMLElement>(sel);
@@ -397,25 +682,20 @@ async function sendAi() {
 // --- rendering ------------------------------------------------------------
 
 function renderEngine() {
-  const badge = document.getElementById("engine-badge")!;
-  if (!state.engine) return;
-  badge.textContent = `engine: ${state.engine.kind} ${state.engine.ready ? "✓" : "✗"}`;
-  badge.className = `engine ${state.engine.ready ? "ready" : ""}`;
+  const badge = document.getElementById("engine-info");
+  if (!badge) return;
+  if (!state.engine) {
+    badge.textContent = "";
+    return;
+  }
+  const status = state.engine.ready ? t("aiReady") : "…";
+  badge.textContent = `${t("aiEngine")}: ${state.engine.kind} · ${status}`;
 }
 
 function renderTree() {
-  const tree = document.getElementById("tree")!;
-  const groups = new Map<string, HostProfile[]>();
-  for (const p of state.profiles) {
-    const g = p.group ?? "Ungrouped";
-    if (!groups.has(g)) groups.set(g, []);
-    groups.get(g)!.push(p);
-  }
-  let html = "";
-  for (const [g, list] of groups) {
-    html += `<div class="group">${escapeHtml(g)}</div>`;
-    for (const p of list) {
-      const color = p.color ?? "#8a96a6";
+  // Keep for backward compat — actual rendering now goes through renderConnList
+  renderConnList();
+}
       html += `<div class="host" data-id="${p.id}">
         <span class="dot" style="background:${color}"></span>
         <div>
